@@ -436,8 +436,6 @@ void i2c_task(void *param) {
 #if 1
 int main() {
     stdio_init_all();
-    I2C ob;
-    ob.init_i2c();
     ssd1306 display(i2c1);
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
     oled_params oled_p = { .display = display, .q = oled_queue};
@@ -463,6 +461,8 @@ int main() {
     //  - OLED init and then refresh x times per second, checking menu_state
 
     xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &oled_p, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &oled_p, tskIDLE_PRIORITY + 1, nullptr);
+
 
     // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
     //

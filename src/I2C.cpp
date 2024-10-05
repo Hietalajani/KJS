@@ -24,32 +24,39 @@ void I2C::init_i2c() {
 #endif
 }
 
-uint8_t I2C::write_eeprom(uint8_t *un, uint8_t *pw, uint8_t *ip) {
+void I2C::write_eeprom(sensor_data data) {
     uint8_t address[3] = {0, 0, 0x50};
+    uint8_t hi = (data.co2 >> 8) & 0xFF;
+    uint8_t lo = (data.co2 >> 0) & 0xFF;
+    uint8_t values[2] = {hi, lo};
+
     i2c_write_blocking(i2c0, EEPROM_ADDR, address, 3, true);
-//    sleep_ms(5);
-//    int ret = i2c_write_blocking(i2c0, EEPROM_ADDR, un, 13, true);
-//    sleep_ms(5);
-//    i2c_write_blocking(i2c0, EEPROM_ADDR, pw, 9, true);
-//    sleep_ms(5);
-//    i2c_write_blocking(i2c0, EEPROM_ADDR, ip, 13, false);
-//    sleep_ms(5);
-//    printf("RET: %d", ret);
-//    return ret;
+    sleep_ms(5);
+    int ret = i2c_write_blocking(i2c0, EEPROM_ADDR, values, 2, true);
+    printf("RET: %d\n", ret);
 }
 
-void I2C::read_eeprom() {
-    uint8_t helo;
+uint16_t I2C::read_eeprom() {
+    uint8_t helo[2];
+    uint16_t co2;
     uint8_t address[2] = {0, 0};
     i2c_write_blocking(i2c0, EEPROM_ADDR, address, 2, true);
     sleep_ms(5);
-    i2c_read_blocking(i2c0, EEPROM_ADDR, &helo, 1, false);
-    printf("EEPROM: %x\n", helo);
-//    i2c_read_blocking(i2c0, EEPROM_ADDR, USERNAME, 13, true);
-//    i2c_read_blocking(i2c0, EEPROM_ADDR, PASSWORD, 9, true);
-//    i2c_read_blocking(i2c0, EEPROM_ADDR, IIPEE, 13, false);
+    i2c_read_blocking(i2c0, EEPROM_ADDR, &helo[0], 1, true);
+    i2c_read_blocking(i2c0, EEPROM_ADDR, &helo[1], 1, false);
+
+    co2 = (helo[0] << 8) | helo[1];
+
+    return co2;
 }
 
+void I2C::eeprom_task(void *params) {
+    auto par = (oled_params *) params;
+    sensor_data data{};
+    if (xQueueReceive(par->q, static_cast <void *> (&data), portMAX_DELAY) == pdTRUE) {
+        I2C::write_eeprom(data);
+    }
+}
 
 void I2C::update_oled(void *params) {
     auto par = (oled_params *) params;

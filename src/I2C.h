@@ -63,12 +63,13 @@ struct sensor_data {
 class I2C {
 public:
     I2C() = default;
-    static uint8_t write_eeprom(uint8_t *un, uint8_t *pw, uint8_t *ip);
-    static void read_eeprom();
+    static void write_eeprom(sensor_data data);
+    static uint16_t read_eeprom();
+    static void eeprom_task(void *params);
     uint8_t get_data(const std::string& type);
     void scroll();
 
-    void init_i2c();
+    static void init_i2c();
 
     static void update_oled(void *params);
     static void set_values(int fanspeed, int temp, int co2, int rh, int pressure);

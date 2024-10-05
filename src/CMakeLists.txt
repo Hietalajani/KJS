@@ -44,6 +44,10 @@ add_executable(${ProjectName}
         I2C.h
         WIFI.cpp
         WIFI.h
+
+#       KJS project
+        Sensor_task.cpp
+        Sensor_task.h
 )
 
 target_include_directories(${ProjectName} PRIVATE
