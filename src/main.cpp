@@ -430,3 +430,29 @@ void i2c_task(void *param) {
 //    }
 //}
 
+#if 0
+int main() {
+    // CREATE TASKS
+    // BUTTON TASK (HW CLASS)
+    //  - init buttons
+    //  - create ISR -> gives semaphores when activated
+    //  - button task controls global variable cursor_position that navigates the menu
+    //  - depending on menu state, button task also controls CO2 level
+
+    // MODBUS TASK (MODBUS CLASS?)
+    //  - put keijos code inside modbus task lmao
+    //  - when task sees something added into the queue, it spanks it to the fan with produal.write hehe
+
+    // I2C TASK (I2C CLASS) -- EEPROM, SENSIRION AND OLED (SEPARATE TASKS?)
+    //  - eeprom reads from queue -> writes to eeprom, then waits for queue again
+    //  - on startup eeprom read
+    //  - sensirion init and is read every time modbus_poll timer PROCS
+    //  - OLED init and then refresh x times per second, checking menu_state
+
+    // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
+    //
+    //  THINGSPEAK THINGS
+
+}
+
+#endif
