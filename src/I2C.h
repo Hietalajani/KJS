@@ -16,6 +16,10 @@
 #include "display/mono_vlsb.h"
 #include "display/ssd1306.h"
 #include "HW.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+#include "semphr.h"
 
 // Pins for eeprom and sensirion
 #define SENSIRION_ADDR 0x40
@@ -41,6 +45,21 @@
 #define RH_ADDR 0, 6
 #define TEMP_ADDR 0, 7
 
+struct oled_params {
+    ssd1306 display;
+    QueueHandle_t q;
+};
+
+struct sensor_data {
+    double temp;
+    uint16_t co2;
+    double rh;
+    uint16_t fanspeed;
+    uint16_t pressure;
+    int set_pressure;
+    bool auto_m;
+};
+
 class I2C {
 public:
     I2C() = default;
@@ -51,7 +70,7 @@ public:
 
     void init_i2c();
 
-    static void update_oled(ssd1306 display, double temp, uint16_t co2, double rh, uint16_t fanspeed, uint16_t pressure, int set_pressure, bool auto_m);
+    static void update_oled(void *params);
     static void set_values(int fanspeed, int temp, int co2, int rh, int pressure);
 
     static uint8_t USERNAME[13];

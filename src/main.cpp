@@ -6,6 +6,7 @@
 #include "hardware/gpio.h"
 #include "PicoOsUart.h"
 #include "ssd1306.h"
+#include "I2C.h"
 
 
 #include "hardware/timer.h"
@@ -111,7 +112,7 @@ void tls_task(void *param)
         vTaskDelay(100);
     }
 }
-
+#if 0
 int main()
 {
     static led_params lp1 = { .pin = 20, .delay = 300 };
@@ -143,6 +144,7 @@ int main()
 
     while(true){};
 }
+#endif
 
 #include <cstdio>
 #include "ModbusClient.h"
@@ -430,8 +432,19 @@ void i2c_task(void *param) {
 //    }
 //}
 
-#if 0
+
+#if 1
 int main() {
+    stdio_init_all();
+    I2C ob;
+    ob.init_i2c();
+    ssd1306 display(i2c1);
+    QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
+    oled_params oled_p = { .display = display, .q = oled_queue};
+
+
+
+
     // CREATE TASKS
     // BUTTON TASK (HW CLASS)
     //  - init buttons
@@ -449,10 +462,16 @@ int main() {
     //  - sensirion init and is read every time modbus_poll timer PROCS
     //  - OLED init and then refresh x times per second, checking menu_state
 
+    xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &oled_p, tskIDLE_PRIORITY + 1, nullptr);
+
     // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
     //
     //  THINGSPEAK THINGS
 
+
+    vTaskStartScheduler();
+
+    while (true) {};
 }
 
 #endif
