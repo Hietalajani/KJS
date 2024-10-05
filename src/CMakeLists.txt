@@ -34,6 +34,16 @@ add_executable(${ProjectName}
 #        display/ssd1306.h
         display/ssd1306os.h
         display/ssd1306os.cpp
+
+#       weedhill project
+        FAN.cpp
+        FAN.h
+        HW.cpp
+        HW.h
+        I2C.cpp
+        I2C.h
+        WIFI.cpp
+        WIFI.h
 )
 
 target_include_directories(${ProjectName} PRIVATE

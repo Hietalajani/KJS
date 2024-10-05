@@ -257,3 +257,176 @@ void i2c_task(void *param) {
 
 
 }
+
+
+// ---------------------------------- WEEDHILL PROJECT MAIN -------------------------------------------------
+
+
+//
+// Created by hiets on 28.2.2024.
+//
+
+//#include "main.h"
+//volatile int fan_speed = 0;
+//volatile bool fan_write = false;
+//volatile bool auto_m = false;
+//volatile int set_pressure = 35;
+//static const char *topic = "controller/status";
+//static const char *topicsub = "controller/settings";
+//
+//bool in_range(int low, int high, int pressure){
+//    return (low <= pressure && pressure <= high);
+//}
+//
+//void messageArrived(MQTT::MessageData &md) {
+//    int nro = 0;
+//    MQTT::Message &message = md.message;
+//    char *buf = (char *) message.payload;
+//    buf[message.payloadlen] = '\0';
+//
+//    // sulje silmäsi keijo
+//    char * ptr = strstr(buf, ":");
+//    ptr = strstr(++ptr, ":");
+//    ptr += 2;
+//    sscanf(ptr, "%d", &nro);
+//    if (strstr(buf, "true") == nullptr) auto_m = false;
+//    else auto_m = true;
+//    if (auto_m) set_pressure = nro;
+//    else { fan_speed = nro * 10; fan_write = true; }
+//}
+//
+//int main() {
+//    stdio_init_all();
+//
+//    auto uart{std::make_shared<PicoUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, 9600, STOP_BITS)};
+//    auto rtu_client{std::make_shared<ModbusClient>(uart)};
+//    ModbusRegister rh(rtu_client, 241, 256);
+//    ModbusRegister temp(rtu_client, 241, 257);
+//    ModbusRegister co2(rtu_client, 240, 256);
+//    auto modbus_poll = make_timeout_time_ms(10000);
+//    ModbusRegister produal(rtu_client, 1, 0);
+//    ModbusRegister fancounter(rtu_client, 1, 0, false);
+//    produal.write(0);
+//    sleep_ms((100));
+//    produal.write(0);
+//
+//    I2C fan;
+//    fan.init_i2c();
+//    I2C::Sensirion s;
+//
+//    // MQTT SHIZZLES
+//    uint8_t username[13] = "SmartIoTMQTT";
+//    username[12] = '\0';
+//    uint8_t pw[9] = "SmartIoT";
+//    pw[8] = '\0';
+//    uint8_t ip[13] = "192.168.1.10";
+//    ip[12] = '\0';
+//
+//    I2C::write_eeprom(username, pw, ip);
+//    I2C::read_eeprom();
+//
+//    printf("USERNAME: %s PASSWORD: %s IP: %s\n", I2C::USERNAME, I2C::PASSWORD, I2C::IIPEE);
+////
+////    IPStack ipstack("SmartIoTMQTT", "SmartIoT");
+////    auto client = MQTT::Client<IPStack, Countdown>(ipstack);
+////
+////    int rc = ipstack.connect("192.168.1.10", 1883);
+////    if (rc != 1) {
+////        printf("rc from TCP connect is %d\n", rc);
+////    }
+////
+////    printf("MQTT connecting\n");
+////    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+////    data.MQTTVersion = 3;
+////    data.clientID.cstring = (char *) "PicoW-sample";
+////    rc = client.connect(data);
+////    if (rc != 0) {
+////        printf("rc from MQTT connect is %d\n", rc);
+////        while (true) {
+////            tight_loop_contents();
+////        }
+////    }
+////    printf("MQTT connected\n");
+////    rc = client.subscribe(topicsub, MQTT::QOS2, messageArrived);
+////    if (rc != 0) {
+////        printf("rc from MQTT subscribe is %d\n", rc);
+////    }
+////    printf("MQTT subscribed\n");
+//
+//    auto mqtt_send = make_timeout_time_ms(2000);
+//    char buf[100];
+//    HW(true, false, 4, 9, 10, 11, 12);
+//    ssd1306 display(i2c1);
+//
+//    while (true) {
+//        double temperature = temp.read() / 10.0;
+//        int co = co2.read();
+//        double relhum = rh.read() / 10.0;
+//        int pressure = s.get_result();
+//
+//        I2C::update_oled(display, temperature, co, relhum, fan_speed / 10, pressure, set_pressure, auto_m);
+//        if (auto_m) {
+//            // Auto mode, set pressure. Change fan speed to achieve wanted pressure
+//            if (!in_range(pressure - SCALE, pressure + SCALE, set_pressure)) {
+//                if (pressure > set_pressure) {
+//                    if (fan_speed - 20 < 0) fan_speed = 0;
+//                    else fan_speed -= 20;
+//                } else if (pressure < set_pressure) {
+//                    if (fan_speed + 20 > 1000) fan_speed = 1000;
+//                    else fan_speed += 20;
+//                }
+//                fan_write = true;
+//            }
+//        }
+//
+//        if (fan_write) {
+//            produal.write(fan_speed);
+//            fan_write = false;
+//        }
+//
+//        if (time_reached(modbus_poll)) {
+//            s.readSensor(MEASURE_PRESSURE);
+//            modbus_poll = delayed_by_ms(modbus_poll, 10000);
+//            printf("RH =%5.1f%%\n", relhum);
+//            printf("TEMP =%5.1fC\n", temperature);
+//            printf("CO2 = %d ppm\n", co);
+//        }
+//
+////        if (time_reached(mqtt_send)) {
+////            mqtt_send = delayed_by_ms(mqtt_send, 2000);
+////            if (!client.isConnected()) {
+////                printf("Not connected...\n");
+////                rc = client.connect(data);
+////                if (rc != 0) {
+////                    printf("rc from MQTT connect is %d\n", rc);
+////                }
+////
+////            }
+////
+////            MQTT::Message message{};
+////            message.retained = false;
+////            message.dup = false;
+////            message.payload = (void *) buf;
+////
+////            std::ostringstream oss;
+////            oss << "{\"auto\":" << std::boolalpha << auto_m
+////                << ", \"pressure\":" << pressure
+////                << ", \"speed\":" << fan_speed / 10
+////                << ", \"co2\":" << co
+////                << ", \"rh\":" << relhum
+////                << ", \"temp\":" << temperature
+////                << "}";
+////
+////            std::string jsonString = oss.str();
+////            sprintf(buf, "%s", jsonString.c_str());
+////            message.qos = MQTT::QOS0;
+////            message.payloadlen = strlen(buf);
+////            buf[message.payloadlen] = '\0';
+////            client.publish(topic, message);
+////        }
+////
+////        cyw43_arch_poll(); // obsolete? - see below
+////        client.yield(100); // socket that client uses calls cyw43_arch_poll()
+//    }
+//}
+
