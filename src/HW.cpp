@@ -1,5 +1,6 @@
 #include "HW.h"
 
+
 volatile int timems = 0;
 volatile int16_t cursor_position = 10;
 volatile bool state = false;
@@ -9,6 +10,8 @@ extern bool fan_write;
 extern int fan_speed;
 extern int set_pressure;
 
+volatile SemaphoreHandle_t button_sem1 = xSemaphoreCreateBinary();
+volatile SemaphoreHandle_t button_sem2 = xSemaphoreCreateBinary();
 //pwm_config HW::pwm_get_config_struct() {
 //    const uint32_t f_pwm = PWM_FREQUENCY;
 //
@@ -26,13 +29,81 @@ extern int set_pressure;
 //}
 
 void HW::handler(uint gpio, uint32_t eventmask) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    uint32_t newtime = time_us_32() / 1000;
+
+    uint ROT_SW = 12;
+    uint ROT_A = 10;
+
+
+    if (gpio == ROT_SW && eventmask == GPIO_IRQ_EDGE_FALL) {
+        if ((newtime - timems) > DEBOUNCE_TIME) {
+            state = true;
+            xSemaphoreGiveFromISR(button_sem1, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
+    }
+
+    if (gpio == ROT_SW && eventmask == GPIO_IRQ_EDGE_RISE) {
+        state = false;
+    }
+
+    if (gpio == ROT_A) {
+        if ((newtime - timems) > DEBOUNCE_TIME) {
+            xSemaphoreGiveFromISR(button_sem2, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
+    }
+
+    timems = newtime;
+}
+
+void HW::button_task(void *params) {
+    uint ROT_B = 11;
+
+    auto pressed_sw = false;
+
+    const uint led_pin = 21;
+    gpio_init(led_pin);
+    gpio_set_dir(led_pin, GPIO_OUT);
+
+    while (true) {
+        if (xSemaphoreTake(button_sem1, pdMS_TO_TICKS(5)) == pdTRUE) {
+            if (pressed_sw) {
+                pressed_sw = false;
+            }
+            else {
+                pressed_sw = true;
+            }
+            printf("sw %d\n", pressed_sw);
+            //xSemaphoreGive("button");
+        }
+
+        if (xSemaphoreTake(button_sem2, pdMS_TO_TICKS(5)) == pdTRUE) {
+            if (gpio_get(ROT_B)) {
+                //xSemaphoreGive("counter_clockwise");
+            }
+            if (!gpio_get(ROT_B)) {
+                //xSemaphoreGive("clockwise");
+            }
+        }
+
+        if (pressed_sw) gpio_put(led_pin, 1);
+        else gpio_put(led_pin, 0);
+        vTaskDelay(BUTTONS_TASK_DELAY);
+    }
+}
+
+
+
+
+/*void HW::handler(uint gpio, uint32_t eventmask) {
     uint32_t newtime = time_us_32() / 1000;
 
     if (gpio == 9) {
         if(eventmask == GPIO_IRQ_EDGE_FALL) {
-            if ((newtime - timems) > DEBOUNCE_TIME && !state) {
-                state = true;
-                auto_m = !auto_m;
+            if ((newtime - timems) > DEBOUNCE_TIME) {
             }
         }
         else {
@@ -89,30 +160,32 @@ void HW::handler(uint gpio, uint32_t eventmask) {
         }
     }
     timems = newtime;
-}
+}*/
 
-//HW::HW(bool up, bool out, int nr, ...) {
-//    va_list args;
-//    va_start(args, nr);
-//    for(int i = 0; i < nr; i++) {
-//        uint arg = va_arg(args, uint);
-//        gpio_init(arg);
-//        // pull up or pull down
-//        up ? gpio_pull_up(arg) : gpio_pull_down(arg);
-//        // output or input
-//        out ? gpio_set_dir(arg, GPIO_OUT) : gpio_set_dir(arg, GPIO_IN);
-//        // interrupt for button
-//        if (arg == 9 || arg == 12) {
-//            gpio_set_irq_enabled_with_callback(arg, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &handler);
-//        }
-//        if (arg == 10) gpio_set_irq_enabled_with_callback(arg, GPIO_IRQ_EDGE_RISE, true, &handler);
-//            // leds get a pwm function for less future-sight
-//        else if (arg == 20 || arg == 21 || arg == 22) {
-//            gpio_set_function(arg, GPIO_FUNC_PWM);
-//            uint slice_num = pwm_gpio_to_slice_num(arg);
-//            pwm_config config = pwm_get_config_struct();
-//            pwm_init(slice_num, &config, true);
-//        }
-//    }
-//    va_end(args);
-//}
+HW::HW(bool up, bool out, int nr, ...) {
+    va_list args;
+    va_start(args, nr);
+    for(int i = 0; i < nr; i++) {
+        uint arg = va_arg(args, uint);
+        gpio_init(arg);
+        // pull up or pull down
+        up ? gpio_pull_up(arg) : gpio_pull_down(arg);
+        // output or input
+        out ? gpio_set_dir(arg, GPIO_OUT) : gpio_set_dir(arg, GPIO_IN);
+        // interrupt for button
+        if (arg == 9 || arg == 12) {
+            gpio_set_irq_enabled_with_callback(arg, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &handler);
+        }
+        if (arg == 10) {
+            gpio_set_irq_enabled_with_callback(arg, GPIO_IRQ_EDGE_RISE, true, &handler);
+        }
+        // leds get a pwm function for less future-sight
+        /*else if (arg == 20 || arg == 21 || arg == 22) {
+            gpio_set_function(arg, GPIO_FUNC_PWM);
+            uint slice_num = pwm_gpio_to_slice_num(arg);
+            pwm_config config = pwm_get_config_struct;
+            pwm_init(slice_num, &config, true);
+        }*/
+    }
+    va_end(args);
+}
