@@ -29,11 +29,12 @@
 #include "PicoOsUart.h"
 void sensor_task(void *param);
 
-struct sensor_params{
+struct params {
     SemaphoreHandle_t minus;
     SemaphoreHandle_t plus;
     SemaphoreHandle_t set_co2;
     QueueHandle_t SensorToOLED_que; // sensor to oled
+    ssd1306 display;
 };
 
 

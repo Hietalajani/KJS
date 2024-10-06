@@ -16,7 +16,7 @@ bool in_range(int low, int high, int co2){
 
 void sensor_task(void *param){
 
-    sensor_params *spr = (sensor_params *) param;
+    auto *spr = (params *) param;
     QueueHandle_t sensor_queue = spr->SensorToOLED_que;
     SemaphoreHandle_t minus = spr->minus;
     SemaphoreHandle_t plus = spr->plus;

@@ -7,6 +7,7 @@
 #include "PicoOsUart.h"
 #include "ssd1306.h"
 #include "I2C.h"
+#include "Sensor_task.h"
 
 
 #include "hardware/timer.h"
@@ -438,7 +439,13 @@ int main() {
     stdio_init_all();
     ssd1306 display(i2c1);
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
-    oled_params oled_p = { .display = display, .q = oled_queue};
+    static params spr {
+            .minus = xSemaphoreCreateBinary(),
+            .plus = xSemaphoreCreateBinary(),
+            .set_co2 = xSemaphoreCreateBinary(),
+            .SensorToOLED_que = oled_queue,
+            .display = display
+    };
 
 
 
@@ -460,9 +467,9 @@ int main() {
     //  - sensirion init and is read every time modbus_poll timer PROCS
     //  - OLED init and then refresh x times per second, checking menu_state
 
-    xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &oled_p, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &oled_p, tskIDLE_PRIORITY + 1, nullptr);
-
+    xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(sensor_task, "Sensor Task", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
 
     // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
     //
