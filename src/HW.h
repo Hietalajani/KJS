@@ -16,20 +16,20 @@
 #define DEBOUNCE_TIME 80
 #define DEBOUNCE_TIME_ROT 5
 #define BUTTONS_TASK_DELAY 10
-#define ROTARY_ENCODER_PIN_A 1
-#define ROTARY_ENCODER_PIN_B 2
+
+#define ROTARY_ENCODER_PIN_SW 12
+#define ROTARY_ENCODER_PIN_A 10
+#define ROTARY_ENCODER_PIN_B 11
 
 
 class HW {
 public:
     HW();
     static void init_gpio(bool up, bool out, int nr, ...);
-//    static pwm_config pwm_get_config_struct();
     static void button_task(void *params);
     SemaphoreHandle_t binary_semaphore_switch;
     SemaphoreHandle_t binary_semaphore_plus;
     SemaphoreHandle_t binary_semaphore_minus;
-
 private:
     static void handler(uint gpio, uint32_t eventmask);
 };
