@@ -444,13 +444,18 @@ int main() {
     HW::init_gpio(true, false, 1, 12);
     HW::init_gpio(false, false, 2, 10, 11);
 
+    Fmutex mutex;
+
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
+    QueueHandle_t eeprom_queue = xQueueCreate(5, sizeof(sensor_data));
     static task_params spr {
             .minus = ob.binary_semaphore_minus,
             .plus = ob.binary_semaphore_plus,
             .sw = ob.binary_semaphore_switch,
             .SensorToOLED_que = oled_queue,
-            .display = display
+            .SensorToEEPROM_que = eeprom_queue,
+            .display = display,
+            .mutex = mutex
     };
 
 

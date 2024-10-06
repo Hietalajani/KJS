@@ -53,17 +53,17 @@ struct oled_params {
 struct sensor_data {
     double temp;
     uint16_t co2;
+    uint16_t set_co2;
+    int co2_change;
     double rh;
     uint16_t fanspeed;
     uint16_t pressure;
-    int set_pressure;
-    bool auto_m;
 };
 
 class I2C {
 public:
     I2C() = default;
-    static void write_eeprom(sensor_data data);
+    static void write_eeprom(uint16_t data);
     static uint16_t read_eeprom();
     static void eeprom_task(void *params);
     uint8_t get_data(const std::string& type);
