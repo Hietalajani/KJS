@@ -162,7 +162,7 @@ void HW::button_task(void *params) {
     timems = newtime;
 }*/
 
-HW::HW(bool up, bool out, int nr, ...) {
+void HW::init_gpio(bool up, bool out, int nr, ...) {
     va_list args;
     va_start(args, nr);
     for(int i = 0; i < nr; i++) {
@@ -188,4 +188,10 @@ HW::HW(bool up, bool out, int nr, ...) {
         }*/
     }
     va_end(args);
+}
+
+HW::HW() {
+    binary_semaphore_switch = xSemaphoreCreateBinary();
+    binary_semaphore_plus = xSemaphoreCreateBinary();
+    binary_semaphore_minus = xSemaphoreCreateBinary();
 }

@@ -23,12 +23,16 @@
 
 class HW {
 public:
-
-    HW(bool up, bool out, int nr, ...);
+    HW();
+    static void init_gpio(bool up, bool out, int nr, ...);
 //    static pwm_config pwm_get_config_struct();
     static void button_task(void *params);
+
 private:
     static void handler(uint gpio, uint32_t eventmask);
+    SemaphoreHandle_t binary_semaphore_switch;
+    SemaphoreHandle_t binary_semaphore_plus;
+    SemaphoreHandle_t binary_semaphore_minus;
 };
 #endif //WEEDHILLS_H
 
