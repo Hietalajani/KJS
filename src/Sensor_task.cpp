@@ -76,7 +76,7 @@ void sensor_task(void *param){
         if (co > CRITICAL_CO2) {
             critical_co2 = true;
         }
-        // Running max fan speed until we achieve received CO2 level
+        // Running max fan speed until we achieve received CO2 level, or yes?
         if (critical_co2 && co >= set_co2){
             produal.write(MAX_FANSPEED);
         } else {
