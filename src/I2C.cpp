@@ -5,6 +5,7 @@
 uint8_t I2C::USERNAME[13];
 uint8_t I2C::PASSWORD[9];
 uint8_t I2C::IIPEE[13];
+int I2C::menu_state = 0;
 
 void I2C::init_i2c() {
     // Eeprom inits
@@ -71,19 +72,6 @@ void I2C::update_oled(void *params) {
 
     extern int16_t cursor_position;
 
-    if (xSemaphoreTake(par->plus, 5) == pdTRUE) {
-        if (cursor_position + 10 > 60) cursor_position = 10;
-        else cursor_position += 10;
-    }
-    else if (xSemaphoreTake(par->minus, 5) == pdTRUE) {
-        if (cursor_position - 10 < 10) cursor_position = 60;
-        else cursor_position -= 10;
-    }
-    else if (xSemaphoreTake(par->sw, 5) == pdTRUE) {
-        if (menu_state == 0) { menu_state = cursor_position / 10; }
-        else menu_state = 0;
-    }
-
     display.fill(0);
     const uint8_t cursor4x8[] =
             {
@@ -93,62 +81,46 @@ void I2C::update_oled(void *params) {
     mono_vlsb cr(cursor4x8, 4, 8);
 
     while (true) {
+        vTaskDelay(pdMS_TO_TICKS(50));
+        display.fill(0);
+
         xQueueReceive(par->SensorToOLED_que, static_cast <void *> (&data), pdMS_TO_TICKS(5));
+
+        if (menu_state == 0) {
+            if (xSemaphoreTake(par->sw, 5) == pdTRUE) {
+                menu_state = 4;
+            }
+        }
 
         switch (menu_state) {
             case 0:
                 if (cursor_position == 60) display.blit(cr, 80, 10);
                 else display.blit(cr, 0, cursor_position);
-                display.text("<MAIN MENU>", 5, 0);
-                display.text("Temp", 5, 10);
-                display.text("CO2", 5, 20);
-                display.text("RH", 5, 30);
-                display.text("Fanspeed", 5, 40);
-                display.text("Pressure", 5, 50);
-                display.text("Auto", 85, 10);
-                display.show();
-                break;
-            case 1:
-                display.fill(0);
-                display.text("<TEMPERATURE>", 5, 0);
-                display.text(std::to_string(data.temp) + "C", 5, 25);
-                display.show();
-                break;
-            case 2:
-                display.fill(0);
-                display.text("<CO2>", 5, 0);
-                display.text(std::to_string(data.co2) + "ppm", 5, 25);
-                display.show();
-                break;
-            case 3:
-                display.fill(0);
-                display.text("<REL. HUMIDITY>", 5, 0);
-                display.text(std::to_string(data.rh) + "%", 5, 25);
+                display.text("<READINGS>", 5, 0);
+                display.text("Temp: " + std::to_string(data.temp), 5, 10);
+                display.text("CO2: " + std::to_string(data.co2), 5, 20);
+                display.text("RH: " + std::to_string(data.rh), 5, 30);
+                display.text("Fanspeed: " + std::to_string(data.fanspeed), 5, 40);
+                display.text("Pressure: " + std::to_string(data.pressure), 5, 50);
                 display.show();
                 break;
             case 4:
                 display.fill(0);
-                display.text("<FANSPEED>", 5, 0);
+                display.text("<SET CO2>", 5, 0);
                 display.rect(5, 25, 100, 20, 1);
-                display.text("val:" + std::to_string(data.fanspeed), 30, 50, 1);
-                for (int i = 0; i <= data.fanspeed; i++) {
+                display.text("val:" + std::to_string(data.co2), 30, 50, 1);
+                for (int i = 0; i <= data.co2; i++) {
                     display.line(6 + i, 26, 6 + i, 44, 1);
                 }
                 display.show();
                 break;
-            case 5:
-                display.fill(0);
-                display.text("<PRESSURE>", 5, 0);
-                display.text(std::to_string(data.pressure) + "Pa", 5, 25);
-                display.show();
-                break;
-            case 6:
-                display.fill(0);
-                display.text("<AUTO MODE>", 5, 0);
-                display.text("Value: " + std::string(data.auto_m ? "ON" : "OFF"), 5, 15);
-                display.text("Pressure: " + std::to_string(data.set_pressure) + "Pa", 5, 25);
-                display.show();
-                break;
+//            case 5:
+//                display.fill(0);
+//                display.text("<PRESSURE>", 5, 0);
+//                display.text(std::to_string(data.pressure) + "Pa", 5, 25);
+//                display.show();
+//                break;
+
             default:
                 break;
 

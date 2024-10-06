@@ -21,7 +21,7 @@
 #define SCALE 5
 #endif
 
-#define STOP_BITS 1 // for simulator
+#define STOP_BITS 2 // for simulator
 //#define STOP_BITS 2 // for real system
 #include "I2C.h"
 #include "ModbusRegister.h"

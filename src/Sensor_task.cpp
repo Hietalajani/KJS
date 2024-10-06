@@ -1,13 +1,14 @@
 #include "Sensor_task.h"
 
 void send_data(double temp, uint16_t co2, double rh, uint16_t fanspeed, uint16_t pressure, QueueHandle_t queue){
-    sensor_data s;
-    s.temp = temp;
-    s.co2 = co2;
-    s.rh = rh;
-    s.fanspeed = fanspeed;
-    s.pressure = pressure;
-    xQueueSend(queue, &s, pdMS_TO_TICKS(10));
+    sensor_data s = {
+            .temp = temp,
+            .co2 = co2,
+            .rh = rh,
+            .fanspeed = fanspeed,
+            .pressure = pressure
+    };
+    xQueueSend(queue, (void *) &s, pdMS_TO_TICKS(10));
 }
 
 bool in_range(int low, int high, int co2){
@@ -27,8 +28,8 @@ void sensor_task(void *param){
 
     //Timeout for moodbuss
     TimeOut_t xTimeOut;
-    TickType_t xTicksToWait = pdMS_TO_TICKS(10000);
-    vTaskSetTimeOutState(&xTimeOut);
+    auto modbus_poll = make_timeout_time_ms(10000);
+//    vTaskSetTimeOutState(&xTimeOut);
 
     // CO2
     ModbusRegister co2(rtu_client, 240, 256);
@@ -43,18 +44,16 @@ void sensor_task(void *param){
     ModbusRegister rh(rtu_client, 241, 256);
 
     // Fanspeed
-    uint16_t fan_speed = 0;
+    uint16_t fan_speed = 100;
     auto fan_write = false;
     ModbusRegister produal(rtu_client, 1, 0);
-    produal.write(0);
-    sleep_ms((100));
-    produal.write(0);
+    produal.write(100);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    produal.write(100);
 
     // Fancounter
     ModbusRegister fancounter(rtu_client, 1, 0, false);
 
-    // Sensirion, pitäs niiiku varmaa tehdä init muualla mut ku ei
-    I2C::init_i2c();
     I2C::Sensirion s;
 
     while(true){
@@ -66,8 +65,8 @@ void sensor_task(void *param){
 
         // Queue to read set CO2 level from user.
         if (I2C::menu_state == 4) {
-            if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change -= 1;
-            if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change += 1;
+            if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE) received_co_change -= 1;
+            if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE) received_co_change += 1;
             if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(5)) == pdTRUE) {
                 set_co2 += received_co_change;
                 received_co_change = 0;
@@ -110,12 +109,13 @@ void sensor_task(void *param){
         send_data(temperature, co, relhum, fan_speed, pressure, sensor_queue);
 
         // Read and printing measured data.
-        if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) == pdTRUE) {
+        if (time_reached(modbus_poll)) {
             s.readSensor(MEASURE_PRESSURE);
-            vTaskSetTimeOutState(&xTimeOut);
+//            vTaskSetTimeOutState(&xTimeOut);
             printf("RH =%5.1f%%\n", relhum);
             printf("TEMP =%5.1fC\n", temperature);
             printf("CO2 = %d ppm\n", co);
+            modbus_poll = delayed_by_ms(modbus_poll, 10000);
         }
     }
 }

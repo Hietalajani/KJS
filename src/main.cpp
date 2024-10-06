@@ -437,6 +437,7 @@ void i2c_task(void *param) {
 #if 1
 int main() {
     stdio_init_all();
+    I2C::init_i2c();
     ssd1306 display(i2c1);
 
     HW ob;

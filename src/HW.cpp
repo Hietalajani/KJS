@@ -4,7 +4,6 @@
 volatile int timems = 0;
 volatile int16_t cursor_position = 10;
 volatile bool state = false;
-volatile int menu_state = 0;
 extern bool auto_m;
 extern bool fan_write;
 extern int fan_speed;
