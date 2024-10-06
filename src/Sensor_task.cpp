@@ -33,7 +33,7 @@ void sensor_task(void *param){
 
     // CO2
     ModbusRegister co2(rtu_client, 240, 256);
-    int set_co2 = 0;
+    int set_co2 = 500;
     int received_co_change = 0;
     auto critical_co2 = false;
 
@@ -74,7 +74,7 @@ void sensor_task(void *param){
                 received_co_change += 1;
                 printf("plus happend, received co: %d\n", received_co_change);
             }
-            if (xSemaphoreTake(set_co2_level, portMAX_DELAY) == pdTRUE) {
+            if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(3)) == pdTRUE) {
                 set_co2 += received_co_change;
                 received_co_change = 0;
                 I2C::menu_state = 0;
@@ -95,10 +95,10 @@ void sensor_task(void *param){
         // Adjusting the CO2 level to set CO2.
         if (co != set_co2){
             if (!in_range(co - SCALE, co + SCALE, set_co2)) {
-                if (co > set_co2) {
-                    if (fan_speed - 20 < 300) fan_speed = 300;
+                if (co < set_co2) {
+                    if (fan_speed - 20 < 0) fan_speed = 0;
                     else fan_speed -= 20;
-                } else if (co < set_co2) {
+                } else if (co > set_co2) {
                     if (fan_speed + 20 > 1000) fan_speed = 1000;
                     else fan_speed += 20;
                 }
@@ -119,7 +119,8 @@ void sensor_task(void *param){
         if (time_reached(modbus_poll)) {
             s.readSensor(MEASURE_PRESSURE);
 //            vTaskSetTimeOutState(&xTimeOut);
-            printf("Set_co2 =%d\n", set_co2);
+            printf("Set_co2 = %d\n", set_co2);
+            printf("Fanspeed = %d\n", fan_speed);
             printf("RH =%5.1f%%\n", relhum);
             printf("TEMP =%5.1fC\n", temperature);
             printf("CO2 = %d ppm\n", co);
