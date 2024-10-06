@@ -65,11 +65,14 @@ void sensor_task(void *param){
         uint16_t pressure = s.get_result();
 
         // Queue to read set CO2 level from user.
-        if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change -= 1;
-        if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change += 1;
-        if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(5)) == pdTRUE){
-            set_co2 += received_co_change;
-            received_co_change = 0;
+        if (I2C::menu_state == 4) {
+            if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change -= 1;
+            if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE)received_co_change += 1;
+            if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(5)) == pdTRUE) {
+                set_co2 += received_co_change;
+                received_co_change = 0;
+                I2C::menu_state = 0;
+            }
         }
 
         // Checking if CO2 level is higher than 2000

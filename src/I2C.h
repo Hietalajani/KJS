@@ -68,6 +68,7 @@ public:
     static void eeprom_task(void *params);
     uint8_t get_data(const std::string& type);
     void scroll();
+    static int menu_state;
 
     static void init_i2c();
 
