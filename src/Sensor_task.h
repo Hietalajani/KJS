@@ -34,7 +34,9 @@ struct task_params {
     SemaphoreHandle_t plus;
     SemaphoreHandle_t sw;
     QueueHandle_t SensorToOLED_que; // sensor to oled
+    QueueHandle_t SensorToEEPROM_que;
     ssd1306 display;
+    Fmutex mutex;
 };
 
 

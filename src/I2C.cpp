@@ -21,20 +21,17 @@ void I2C::init_i2c() {
     gpio_set_function(SENSIRION_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(SENSIRION_SDA);
     gpio_pull_up(SENSIRION_SCL);
-
 #endif
 }
 
-void I2C::write_eeprom(sensor_data data) {
-    uint8_t address[3] = {0, 0, 0x50};
-    uint8_t hi = (data.co2 >> 8) & 0xFF;
-    uint8_t lo = (data.co2 >> 0) & 0xFF;
-    uint8_t values[2] = {hi, lo};
+void I2C::write_eeprom(uint16_t data) {
+    uint8_t address[4] = {0, 0};
+    uint8_t hi = (data >> 8) & 0xFF;
+    uint8_t lo = (data >> 0) & 0xFF;
+    address[2] = hi;
+    address[3] = lo;
 
-    i2c_write_blocking(i2c0, EEPROM_ADDR, address, 3, true);
-    sleep_ms(5);
-    int ret = i2c_write_blocking(i2c0, EEPROM_ADDR, values, 2, true);
-    printf("RET: %d\n", ret);
+    i2c_write_blocking(i2c0, EEPROM_ADDR, address, 4, false);
 }
 
 uint16_t I2C::read_eeprom() {
@@ -46,16 +43,32 @@ uint16_t I2C::read_eeprom() {
     i2c_read_blocking(i2c0, EEPROM_ADDR, &helo[0], 1, true);
     i2c_read_blocking(i2c0, EEPROM_ADDR, &helo[1], 1, false);
 
-    co2 = (helo[0] << 8) | helo[1];
+    co2 = helo[0] << 8 | helo[1];
 
     return co2;
 }
 
 void I2C::eeprom_task(void *params) {
-    auto par = (oled_params *) params;
-    sensor_data data{};
-    if (xQueueReceive(par->q, static_cast <void *> (&data), portMAX_DELAY) == pdTRUE) {
-        I2C::write_eeprom(data);
+    auto par = (task_params *) params;
+    QueueHandle_t q = par->SensorToEEPROM_que;
+
+    sensor_data data {
+        .temp = 0,
+        .co2 = 0,
+        .set_co2 = 0,
+        .co2_change = 0,
+        .rh = 0,
+        .fanspeed = 0,
+        .pressure = 0
+    };
+
+
+    while (true) {
+        if (xQueueReceive(q, static_cast <void *> (&data), portMAX_DELAY) == pdTRUE) {
+            uint16_t set_co2 = data.set_co2;
+            I2C::write_eeprom(set_co2);
+            xQueueReset(q);
+        }
     }
 }
 
@@ -65,12 +78,12 @@ void I2C::update_oled(void *params) {
     sensor_data data = {
             .temp = 0,
             .co2 = 0,
+            .set_co2 = 0,
+            .co2_change = 0,
             .rh = 0,
             .fanspeed = 0,
             .pressure = 0
     };
-
-    extern int16_t cursor_position;
 
     display.fill(0);
     const uint8_t cursor4x8[] =
@@ -81,7 +94,7 @@ void I2C::update_oled(void *params) {
     mono_vlsb cr(cursor4x8, 4, 8);
 
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(150));
         display.fill(0);
 
         xQueueReceive(par->SensorToOLED_que, static_cast <void *> (&data), pdMS_TO_TICKS(5));
@@ -91,40 +104,31 @@ void I2C::update_oled(void *params) {
                 menu_state = 4;
             }
         }
-
+        par->mutex.lock();
         switch (menu_state) {
             case 0:
-                if (cursor_position == 60) display.blit(cr, 80, 10);
-                else display.blit(cr, 0, cursor_position);
                 display.text("<READINGS>", 5, 0);
-                display.text("Temp: " + std::to_string(data.temp), 5, 10);
-                display.text("CO2: " + std::to_string(data.co2), 5, 20);
-                display.text("RH: " + std::to_string(data.rh), 5, 30);
-                display.text("Fanspeed: " + std::to_string(data.fanspeed), 5, 40);
-                display.text("Pressure: " + std::to_string(data.pressure), 5, 50);
+                display.text("Temp: " + std::to_string((int) data.temp) + "C", 5, 10);
+                display.text("CO2: " + std::to_string((int) data.co2) + "ppm", 5, 20);
+                display.text("RH: " + std::to_string((int) data.rh) + "%", 5, 30);
+                display.text("Fanspeed: " + std::to_string((int) (data.fanspeed / 10)) + "%", 5, 40);
+                display.text("Pressure: " + std::to_string((int) data.pressure), 5, 50);
                 display.show();
                 break;
             case 4:
-                display.fill(0);
                 display.text("<SET CO2>", 5, 0);
                 display.rect(5, 25, 100, 20, 1);
-                display.text("val:" + std::to_string(data.co2), 30, 50, 1);
-                for (int i = 0; i <= data.co2; i++) {
+                display.text("val:" + std::to_string(data.set_co2 + data.co2_change), 30, 50, 1);
+                for (int i = 0; i < (data.set_co2 + data.co2_change) / 15; i++) {
                     display.line(6 + i, 26, 6 + i, 44, 1);
                 }
                 display.show();
                 break;
-//            case 5:
-//                display.fill(0);
-//                display.text("<PRESSURE>", 5, 0);
-//                display.text(std::to_string(data.pressure) + "Pa", 5, 25);
-//                display.show();
-//                break;
-
             default:
                 break;
 
         }
+        par->mutex.unlock();
     }
 }
 
