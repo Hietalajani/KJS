@@ -33,8 +33,8 @@ void sensor_task(void *param){
 
     // CO2
     ModbusRegister co2(rtu_client, 240, 256);
-    int set_co2 = co2.read();
-    int received_co_change;
+    int set_co2 = 0;
+    int received_co_change = 0;
     auto critical_co2 = false;
 
     // Temperature
@@ -65,9 +65,16 @@ void sensor_task(void *param){
 
         // Queue to read set CO2 level from user.
         if (I2C::menu_state == 4) {
-            if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE) received_co_change -= 1;
-            if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE) received_co_change += 1;
-            if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(5)) == pdTRUE) {
+            //printf("Menustate = %d\n", I2C::menu_state);
+            if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE) {
+                received_co_change -= 1;
+                printf("minus happend, received co: %d\n", received_co_change);
+            }
+            if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE) {
+                received_co_change += 1;
+                printf("plus happend, received co: %d\n", received_co_change);
+            }
+            if (xSemaphoreTake(set_co2_level, portMAX_DELAY) == pdTRUE) {
                 set_co2 += received_co_change;
                 received_co_change = 0;
                 I2C::menu_state = 0;
@@ -89,10 +96,10 @@ void sensor_task(void *param){
         if (co != set_co2){
             if (!in_range(co - SCALE, co + SCALE, set_co2)) {
                 if (co > set_co2) {
-                    if (fan_speed - 20 < MIN_CO2) fan_speed = MIN_CO2;
+                    if (fan_speed - 20 < 300) fan_speed = 300;
                     else fan_speed -= 20;
                 } else if (co < set_co2) {
-                    if (fan_speed + 20 > MAX_CO2) fan_speed = MAX_CO2;
+                    if (fan_speed + 20 > 1000) fan_speed = 1000;
                     else fan_speed += 20;
                 }
                 fan_write = true;
@@ -106,12 +113,13 @@ void sensor_task(void *param){
         }
 
         //send all data.
-        send_data(temperature, co, relhum, fan_speed, pressure, sensor_queue);
+        send_data(temperature, set_co2, relhum, fan_speed, pressure, sensor_queue);
 
         // Read and printing measured data.
         if (time_reached(modbus_poll)) {
             s.readSensor(MEASURE_PRESSURE);
 //            vTaskSetTimeOutState(&xTimeOut);
+            printf("Set_co2 =%d\n", set_co2);
             printf("RH =%5.1f%%\n", relhum);
             printf("TEMP =%5.1fC\n", temperature);
             printf("CO2 = %d ppm\n", co);
