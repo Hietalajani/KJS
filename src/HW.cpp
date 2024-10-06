@@ -60,6 +60,8 @@ void HW::handler(uint gpio, uint32_t eventmask) {
 }
 
 void HW::button_task(void *params) {
+    auto par = (task_params *) params;
+
     uint ROT_B = 11;
 
     auto pressed_sw = false;
@@ -77,20 +79,22 @@ void HW::button_task(void *params) {
                 pressed_sw = true;
             }
             printf("sw %d\n", pressed_sw);
-            //xSemaphoreGive("button");
+            xSemaphoreGive(par->sw);
         }
 
         if (xSemaphoreTake(button_sem2, pdMS_TO_TICKS(5)) == pdTRUE) {
             if (gpio_get(ROT_B)) {
                 //xSemaphoreGive("counter_clockwise");
+                xSemaphoreGive(par->minus);
             }
             if (!gpio_get(ROT_B)) {
                 //xSemaphoreGive("clockwise");
+                xSemaphoreGive(par->plus);
             }
         }
 
-        if (pressed_sw) gpio_put(led_pin, 1);
-        else gpio_put(led_pin, 0);
+        if (pressed_sw) gpio_put(led_pin, true);
+        else gpio_put(led_pin, false);
         vTaskDelay(BUTTONS_TASK_DELAY);
     }
 }

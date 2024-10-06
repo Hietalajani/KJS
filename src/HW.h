@@ -12,6 +12,7 @@
 #include "semphr.h"
 #include <iostream>
 #include <sstream>
+#include "Sensor_task.h"
 
 #define PWM_FREQUENCY 1000
 #define MHZ_1 1000000UL
@@ -27,12 +28,12 @@ public:
     static void init_gpio(bool up, bool out, int nr, ...);
 //    static pwm_config pwm_get_config_struct();
     static void button_task(void *params);
-
-private:
-    static void handler(uint gpio, uint32_t eventmask);
     SemaphoreHandle_t binary_semaphore_switch;
     SemaphoreHandle_t binary_semaphore_plus;
     SemaphoreHandle_t binary_semaphore_minus;
+
+private:
+    static void handler(uint gpio, uint32_t eventmask);
 };
 #endif //WEEDHILLS_H
 

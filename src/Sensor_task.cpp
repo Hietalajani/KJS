@@ -16,11 +16,11 @@ bool in_range(int low, int high, int co2){
 
 void sensor_task(void *param){
 
-    auto *spr = (params *) param;
+    auto *spr = (task_params *) param;
     QueueHandle_t sensor_queue = spr->SensorToOLED_que;
     SemaphoreHandle_t minus = spr->minus;
     SemaphoreHandle_t plus = spr->plus;
-    SemaphoreHandle_t set_co2_level = spr->set_co2;
+    SemaphoreHandle_t set_co2_level = spr->sw;
 
     auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, 9600, STOP_BITS)};
     auto rtu_client{std::make_shared<ModbusClient>(uart)};

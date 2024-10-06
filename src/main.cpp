@@ -438,11 +438,16 @@ void i2c_task(void *param) {
 int main() {
     stdio_init_all();
     ssd1306 display(i2c1);
+
+    HW ob;
+    HW::init_gpio(true, false, 1, 12);
+    HW::init_gpio(false, false, 2, 10, 11);
+
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
-    static params spr {
-            .minus = xSemaphoreCreateBinary(),
-            .plus = xSemaphoreCreateBinary(),
-            .set_co2 = xSemaphoreCreateBinary(),
+    static task_params spr {
+            .minus = ob.binary_semaphore_minus,
+            .plus = ob.binary_semaphore_plus,
+            .sw = ob.binary_semaphore_switch,
             .SensorToOLED_que = oled_queue,
             .display = display
     };
@@ -469,7 +474,8 @@ int main() {
 
     xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(sensor_task, "Sensor Task", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(sensor_task, "SENSOR", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(HW::button_task, "BUTTONS", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
 
     // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
     //

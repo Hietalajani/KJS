@@ -59,7 +59,7 @@ void I2C::eeprom_task(void *params) {
 }
 
 void I2C::update_oled(void *params) {
-    auto par = (oled_params *) params;
+    auto par = (task_params *) params;
     ssd1306 display = par->display;
     sensor_data data = {
             .temp = 0,
@@ -72,15 +72,15 @@ void I2C::update_oled(void *params) {
     extern int16_t cursor_position;
     extern int menu_state;
 
-    if (xSemaphoreTake(plus, 5) == pdTRUE) {
+    if (xSemaphoreTake(par->plus, 5) == pdTRUE) {
         if (cursor_position + 10 > 60) cursor_position = 10;
         else cursor_position += 10;
     }
-    else if (xSemaphoreTake(minus, 5) == pdTRUE) {
+    else if (xSemaphoreTake(par->minus, 5) == pdTRUE) {
         if (cursor_position - 10 < 10) cursor_position = 60;
         else cursor_position -= 10;
     }
-    else if (xSemaphoreTake(click, 5) == pdTRUE) {
+    else if (xSemaphoreTake(par->sw, 5) == pdTRUE) {
         if (menu_state == 0) { menu_state = cursor_position / 10; }
         else menu_state = 0;
     }
@@ -92,10 +92,9 @@ void I2C::update_oled(void *params) {
             };
 
     mono_vlsb cr(cursor4x8, 4, 8);
-    if (data.auto_m) menu_state = 6;
 
     while (true) {
-        xQueueReceive(par->q, static_cast <void *> (&data), pdMS_TO_TICKS(5));
+        xQueueReceive(par->SensorToOLED_que, static_cast <void *> (&data), pdMS_TO_TICKS(5));
 
         switch (menu_state) {
             case 0:
