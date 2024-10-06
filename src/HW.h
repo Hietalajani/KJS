@@ -6,7 +6,6 @@
 #include <cstdarg>
 #include <cstring>
 #include "pico/stdlib.h"
-//#include "hardware/pwm.h"
 #include "hardware/clocks.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -14,9 +13,8 @@
 #include <sstream>
 #include "Sensor_task.h"
 
-#define PWM_FREQUENCY 1000
-#define MHZ_1 1000000UL
-#define DEBOUNCE_TIME 120
+#define DEBOUNCE_TIME 80
+#define DEBOUNCE_TIME_ROT 5
 #define BUTTONS_TASK_DELAY 10
 #define ROTARY_ENCODER_PIN_A 1
 #define ROTARY_ENCODER_PIN_B 2
