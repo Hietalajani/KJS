@@ -70,7 +70,6 @@ void I2C::update_oled(void *params) {
     };
 
     extern int16_t cursor_position;
-    extern int menu_state;
 
     if (xSemaphoreTake(par->plus, 5) == pdTRUE) {
         if (cursor_position + 10 > 60) cursor_position = 10;
