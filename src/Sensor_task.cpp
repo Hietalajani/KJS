@@ -31,14 +31,14 @@ void sensor_task(void *param){
 
     //Timeout for modbus
     TimeOut_t xTimeOut;
-    auto modbus_poll = make_timeout_time_ms(25000);
+    auto modbus_poll = make_timeout_time_ms(CO2_PUMPING_CHECK);
 //    vTaskSetTimeOutState(&xTimeOut);
 
     // CO2
     ModbusRegister co2(rtu_client, 240, 256);
     uint16_t eeprom_val = I2C::read_eeprom();
     int set_co2;
-    if (eeprom_val > 0 && eeprom_val < 1500) set_co2 = eeprom_val;
+    if (eeprom_val > 0 && eeprom_val < MAX_CO2) set_co2 = eeprom_val;
     else set_co2 = 500;
 
     int received_co_change = 0;
@@ -73,15 +73,14 @@ void sensor_task(void *param){
         //Sensirion.
         uint16_t pressure = s.get_result();
 
-
         // Queue to read set CO2 level from user.
         if (I2C::menu_state == 4) {
             //printf("Menustate = %d\n", I2C::menu_state);
             if (xSemaphoreTake(minus, pdMS_TO_TICKS(5)) == pdTRUE) {
-                if (set_co2 - received_co_change > 0) received_co_change -= 10;
+                if (set_co2 - received_co_change > MIN_CO2) received_co_change -= 10;
             }
             if (xSemaphoreTake(plus, pdMS_TO_TICKS(5)) == pdTRUE) {
-                if (set_co2 + received_co_change < 1500) received_co_change += 10;
+                if (set_co2 + received_co_change < MAX_CO2) received_co_change += 10;
             }
             if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(3)) == pdTRUE) {
                 set_co2 += received_co_change;
@@ -96,9 +95,10 @@ void sensor_task(void *param){
         if (co > CRITICAL_CO2) {
             critical_co2 = true;
         }
+
         // Running max fan speed until we achieve received CO2 level, or yes?
         if (critical_co2 && co > set_co2 + 15){
-            if (fan_speed + 20 > 1000) fan_speed = 1000;
+            if (fan_speed + 20 > MAX_FANSPEED) fan_speed = MAX_FANSPEED;
             else fan_speed += 20;
             fan_write = true;
         } else {
@@ -112,7 +112,7 @@ void sensor_task(void *param){
 
         if (!range && co < set_co2) {
             gpio_put(27, true);
-            vTaskDelay(pdMS_TO_TICKS(330));
+            vTaskDelay(pdMS_TO_TICKS(CO2_PUMPING_TIME));
             gpio_put(27, false);
             range = true;
         }
@@ -130,6 +130,7 @@ void sensor_task(void *param){
             send_data(temperature, co, set_co2, relhum, fan_speed, pressure, eeprom_queue, received_co_change);
             eeprom_write = false;
         }
+
         // Read and printing measured data.
         if (time_reached(modbus_poll)) {
             spr->mutex.lock();
@@ -141,7 +142,7 @@ void sensor_task(void *param){
             printf("RH =%5.1f%%\n", relhum);
             printf("TEMP =%5.1fC\n", temperature);
             printf("CO2 = %d ppm\n", co);
-            modbus_poll = delayed_by_ms(modbus_poll, 25000);
+            modbus_poll = delayed_by_ms(modbus_poll, CO2_PUMPING_CHECK);
             range = in_range(set_co2 - SCALE, set_co2 + SCALE, co);
         }
         vTaskDelay(pdMS_TO_TICKS(5));

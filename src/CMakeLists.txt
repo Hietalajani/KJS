@@ -3,8 +3,6 @@ add_executable(${ProjectName}
         critical_section.cpp
         Fmutex.cpp
         Fmutex.h
-        blinker.cpp
-        blinker.h
 
         ipstack/IPStack.cpp
         ipstack/IPStack.h
@@ -36,8 +34,6 @@ add_executable(${ProjectName}
         display/ssd1306os.cpp
 
 #       weedhill project
-        FAN.cpp
-        FAN.h
         HW.cpp
         HW.h
         I2C.cpp

@@ -62,7 +62,6 @@ void I2C::eeprom_task(void *params) {
         .pressure = 0
     };
 
-
     while (true) {
         if (xQueueReceive(q, static_cast <void *> (&data), portMAX_DELAY) == pdTRUE) {
             uint16_t set_co2 = data.set_co2;
@@ -104,6 +103,7 @@ void I2C::update_oled(void *params) {
                 menu_state = 4;
             }
         }
+
         par->mutex.lock();
         switch (menu_state) {
             case 0:
