@@ -8,7 +8,7 @@
 #include "ssd1306.h"
 #include "I2C.h"
 #include "Sensor_task.h"
-
+#include "WIFI.h"
 
 #include "hardware/timer.h"
 extern "C" {
@@ -20,6 +20,8 @@ uint32_t read_runtime_ctr(void) {
 #include "blinker.h"
 
 SemaphoreHandle_t gpio_sem;
+QueueHandle_t api_que;
+
 
 void gpio_callback(uint gpio, uint32_t events) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -103,7 +105,7 @@ void serial_task(void *param)
 void modbus_task(void *param);
 void display_task(void *param);
 void i2c_task(void *param);
-extern "C" {
+/*extern "C" {
     void tls_test(void);
 }
 void tls_task(void *param)
@@ -112,7 +114,7 @@ void tls_task(void *param)
     while(true) {
         vTaskDelay(100);
     }
-}
+}*/
 #if 0
 int main()
 {
@@ -450,6 +452,7 @@ int main() {
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t eeprom_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t range_queue = xQueueCreate(5, sizeof(sensor_data));
+    api_que = xQueueCreate(5, sizeof(char) * 500);
     static task_params spr {
             .minus = ob.binary_semaphore_minus,
             .plus = ob.binary_semaphore_plus,
@@ -457,9 +460,25 @@ int main() {
             .SensorToOLED_que = oled_queue,
             .SensorToEEPROM_que = eeprom_queue,
             .SensorToRANGE_que = range_queue,
+            .API_QUE = api_que,
             .display = display,
             .mutex = mutex
     };
+
+    TimerHandle_t API_calls = xTimerCreate(
+            "Update Thing speak data and read que",
+            TIMER_TIMEOUT,
+            pdTRUE,
+            nullptr,
+            API_callback
+    );
+    /*TimerHandle_t Update_TS = xTimerCreate(
+            "Update Thing speak data",
+            TIMER_TIMEOUT,
+            pdTRUE,
+            nullptr,
+            update_ts_callback
+    );*/
 
 
 
@@ -485,6 +504,8 @@ int main() {
     xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(sensor_task, "SENSOR", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(HW::button_task, "BUTTONS", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(api_task, "API Calls", 1024, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTimerStart(API_calls, pdMS_TO_TICKS(15000));
 
     // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
     //

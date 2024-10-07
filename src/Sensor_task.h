@@ -37,6 +37,7 @@ struct task_params {
     QueueHandle_t SensorToOLED_que; // sensor to oled
     QueueHandle_t SensorToEEPROM_que;
     QueueHandle_t SensorToRANGE_que;
+    QueueHandle_t API_QUE;
     ssd1306 display;
     Fmutex mutex;
 };

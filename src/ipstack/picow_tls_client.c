@@ -1,52 +1,65 @@
-/*
- * Copyright (c) 2023 Raspberry Pi (Trading) Ltd.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #include <mbedtls/debug.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 
 #if 1
-//#define TLS_CLIENT_SERVER        "18.198.188.151"
+#define WIFI_SSID "iPhone (Lore)"
+#define WIFI_PASSWORD "moromoro123"
+
+#define TS_API_KEY "CMP4T8OD4I7JIO0E"
+#define TB_API_KEY "C7BZYN6EG1OWPVS1"
+#define TB_ID      "53310"
+
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
-#define TLS_CLIENT_HTTP_REQUEST  "GET /talkbacks/52920/commands/COMMAND_ID.json?api_key=371DAWENQKI6J8DD HTTP/1.1\r\n" \
-                                 "Host: " TLS_CLIENT_SERVER "\r\n" \
-                                 "Connection: close\r\n" \
-                                 "\r\n"
+#define TLS_CLIENT_HTTP_SEND_DATA  ("GET /update?api_key="TS_API_KEY"&field1=100&field2=60&field3=24&field4=40&field5=150 HTTP/1.1\r\n" \
+                                  "Host: api.thingspeak.com\r\n" \
+                                  "User-Agent: PicoW\r\n" \
+                                  "Accept: */*\r\n" \
+                                  "Content-Length: 0\r\n" \
+                                  "Content-Type: application/x-www-form-urlencoded\r\n" \
+                                  "\r\n")
+#define TLS_CLIENT_HTTP_RECEIVE_DATA  "GET /channels/2684345/fields/5.json?api_key=CRM2H2J47Q1DGW7B&results=2 HTTP/1.1\r\n" \
+                                  "Host: api.thingspeak.com\r\n" \
+                                  "User-Agent: PicoW\r\n" \
+                                  "Accept: */*\r\n" \
+                                  "Content-Length: 0\r\n" \
+                                  "Content-Type: application/x-www-form-urlencoded\r\n" \
+                                  "\r\n"
+#define TLS_CLIENT_TB_QUEUE_READ ("POST /talkbacks/"TB_ID"/commands/execute.json HTTP/1.1\r\n" \
+                                  "Host: api.thingspeak.com\r\n" \
+                                  "Content-Length: 24\r\n" \
+                                  "Content-Type: application/x-www-form-urlencoded\r\n" \
+                                  "\r\n" \
+                                  "api_key="TB_API_KEY)
 #define TLS_CLIENT_TIMEOUT_SECS  15
 #endif
-// GET https://api.thingspeak.com/talkbacks/52920/commands/COMMAND_ID.json?api_key=371DAWENQKI6J8DD
-#define TLS_JOES_SERVER "-----BEGIN CERTIFICATE-----\n\
-MIIDXTCCAkWgAwIBAgIUPp2A/waMZh3cPqpQ9xqhu5d3lA0wDQYJKoZIhvcNAQEL\n\
-BQAwPjEXMBUGA1UEAwwOMTguMTk4LjE4OC4xNTExCzAJBgNVBAYTAlVTMRYwFAYD\n\
-VQQHDA1TYW4gRnJhbnNpc2NvMB4XDTI0MDYxMjExMjEwM1oXDTI1MDYwMzExMjEw\n\
-M1owPjEXMBUGA1UEAwwOMTguMTk4LjE4OC4xNTExCzAJBgNVBAYTAlVTMRYwFAYD\n\
-VQQHDA1TYW4gRnJhbnNpc2NvMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\n\
-AQEAuWejVUsk/cYJHp+vOYkBzWdSvHlYWbkdWf2HnHy8qYLMJ/sQyYcL9XEv85dq\n\
-HrOCuS1vp7UC0YxnfFQ2tmQ9PNqaEUOOvIwJUOK5jutK+H16gFTbOHM4EdcY1WkJ\n\
-43jffHSiq7RRiAUhTwh+2ISCMAxPlXcOiEPoUrFauOKTRMvBFcfgqFHbOdCA9X5z\n\
-ol0JzdeV9MMYtSWhMi+F+DJBMrNDxQhymJFyt6p9ft0v8m5B5mTKGuhppMCUSHNP\n\
-ij3WQkTnByOynUAQ3WG/LaSNg1ItqPVf9/RHKWWViRAwB4DEfOoeKkM2EFHqxHLw\n\
-bjybmleFnxQguzX8+oEe9NKGTQIDAQABo1MwUTAdBgNVHQ4EFgQUx8JPYn//MjiT\n\
-4o38VAS4advRrtQwHwYDVR0jBBgwFoAUx8JPYn//MjiT4o38VAS4advRrtQwDwYD\n\
-VR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEADqaV5F+HhRqL35O5sycZ\n\
-E4Gn8KewK/BDWkmQzqP5+w1PZ9bUGiSY49ftT2EGiLoOawnztkGBWX1Sv520T5qE\n\
-wvB/rDzxOU/v9OIUTqCX7X68zVoN7A7r1iP6o66mnfgu9xDSk0ROZ73bYtaWL/Qq\n\
-SJWBN1pPY2ekFxYNwBg8C1DTJ3H51H6R7kN0wze7lMN1tglrvLl1e60a8rm+QNwX\n\
-FzQGTenLecgMGeXVsIGhnivQTvF2HN+EcXHs8O8LzHpX7fpt/KcsBx+kYmltkdJW\n\
-QaFXAdvGJkhKEwJVn3qETVlTdtSKpc/1KdXq/01HuX7cPfXVMGJVXuJAk6Yxgx8z\n\
-Ew==\n\
+#define TS_ROOT_CERT "-----BEGIN CERTIFICATE-----\n\
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\n\
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n\
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\n\
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT\n\
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\n\
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG\n\
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB\n\
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97\n\
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt\n\
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P\n\
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4\n\
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO\n\
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR\n\
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw\n\
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr\n\
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg\n\
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF\n\
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls\n\
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n\
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n\
 -----END CERTIFICATE-----\n"
 
 extern bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout);
 
-//#define WIFI_SSID "SmartIotMQTT"
-//#define WIFI_PASSWORD "SmartIot"
 
-void tls_test(void) {
-    //stdio_init_all();
+void tls_test(int send_or_receive) {
 #if 0
     struct timeval now;
     now.tv_sec = 1725920831;
@@ -60,17 +73,22 @@ void tls_test(void) {
         printf("failed to initialise\n");
         return;
     }
-    cyw43_arch_enable_sta_mode();
 
+
+    printf("Connecting....\n");
+    cyw43_arch_enable_sta_mode();
     if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
         printf("failed to connect\n");
         return;
-    }
-    const uint8_t cert_joe[] = TLS_JOES_SERVER;
-    const uint8_t dummy_cert[]={0};
+    } else printf("Connected to the WIFI.\n");
 
-    //bool pass = run_tls_client_test(cert_joe, sizeof(cert_joe), TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_REQUEST, TLS_CLIENT_TIMEOUT_SECS);
-    bool pass = run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_REQUEST, TLS_CLIENT_TIMEOUT_SECS);
+    const uint8_t ts_root_cert[] = TS_ROOT_CERT;
+
+    printf("Trying to send HTTPS message.\n");
+    bool pass;
+    if (send_or_receive == 1)pass = run_tls_client_test(ts_root_cert, sizeof(ts_root_cert), TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_SEND_DATA, TLS_CLIENT_TIMEOUT_SECS);
+    if (send_or_receive == 0)pass = run_tls_client_test(ts_root_cert, sizeof(ts_root_cert), TLS_CLIENT_SERVER, TLS_CLIENT_TB_QUEUE_READ, TLS_CLIENT_TIMEOUT_SECS);
+
     if (pass) {
         printf("Test passed\n");
     } else {
@@ -83,4 +101,5 @@ void tls_test(void) {
     printf("All done\n");
     return;
 }
+
 
