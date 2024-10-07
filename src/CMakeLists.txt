@@ -44,6 +44,10 @@ add_executable(${ProjectName}
 #       KJS project
         Sensor_task.cpp
         Sensor_task.h
+
+#       cJSON
+        cJSON.c
+        cJSON.h
 )
 
 target_include_directories(${ProjectName} PRIVATE

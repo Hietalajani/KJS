@@ -17,6 +17,8 @@ uint32_t read_runtime_ctr(void) {
 }
 }
 
+QueueHandle_t api_que = xQueueCreate(5, sizeof(char) * 1000);
+
 #if 1
 int main() {
     stdio_init_all();
@@ -33,7 +35,6 @@ int main() {
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t eeprom_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t range_queue = xQueueCreate(5, sizeof(sensor_data));
-    api_que = xQueueCreate(5, sizeof(char) * 500);
     static task_params spr {
             .minus = ob.binary_semaphore_minus,
             .plus = ob.binary_semaphore_plus,

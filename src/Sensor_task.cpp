@@ -22,9 +22,12 @@ void sensor_task(void *param){
     auto *spr = (task_params *) param;
     QueueHandle_t sensor_queue = spr->SensorToOLED_que;
     QueueHandle_t eeprom_queue = spr->SensorToEEPROM_que;
+    QueueHandle_t api_que = spr->API_QUE;
     SemaphoreHandle_t minus = spr->minus;
     SemaphoreHandle_t plus = spr->plus;
     SemaphoreHandle_t set_co2_level = spr->sw;
+
+    char str[1000];
 
     auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, 9600, STOP_BITS)};
     auto rtu_client{std::make_shared<ModbusClient>(uart)};
@@ -51,13 +54,13 @@ void sensor_task(void *param){
     ModbusRegister rh(rtu_client, 241, 256);
 
     // Fanspeed
-    uint16_t fan_speed = 100;
+    uint16_t fan_speed = 0;
     auto fan_write = false;
     auto eeprom_write = false;
     ModbusRegister produal(rtu_client, 1, 0);
-    produal.write(100);
+    produal.write(0);
     vTaskDelay(pdMS_TO_TICKS(100));
-    produal.write(100);
+    produal.write(0);
 
     // Fancounter
     ModbusRegister fancounter(rtu_client, 1, 0, false);
@@ -85,10 +88,26 @@ void sensor_task(void *param){
             if (xSemaphoreTake(set_co2_level, pdMS_TO_TICKS(3)) == pdTRUE) {
                 set_co2 += received_co_change;
                 received_co_change = 0;
-                I2C::menu_state = 0;
+                I2C::menu_state = 5;
 
                 eeprom_write = true;
             }
+        }
+
+        if (xQueueReceive(api_que, (void *) &str, pdMS_TO_TICKS(5) == pdTRUE)) {
+            cJSON *json = cJSON_Parse(strchr(str, '{'));
+            cJSON *ret = cJSON_GetObjectItemCaseSensitive(json, "command_string");
+            int inteker;
+            char *stri = cJSON_Print(ret);
+            sscanf(stri, "\"%d", &inteker);
+
+            if (inteker > 200 && inteker < 1500) {
+                set_co2 = inteker;
+            }
+
+            free(json);
+            free(ret);
+
         }
 
         // Checking if CO2 level is higher than 2000

@@ -31,6 +31,7 @@
 #include "ModbusClient.h"
 #include "PicoOsUart.h"
 #include "timers.h"
+#include "cJSON.h"
 void sensor_task(void *param);
 
 struct task_params {

@@ -2,9 +2,6 @@
 #include "I2C.h"
 //////////////////////////////////////////////////////////////
 
-uint8_t I2C::USERNAME[13];
-uint8_t I2C::PASSWORD[9];
-uint8_t I2C::IIPEE[13];
 int I2C::menu_state = 0;
 
 void I2C::init_i2c() {
@@ -125,7 +122,26 @@ void I2C::update_oled(void *params) {
                 display.show();
                 break;
             case 5:
+                display.rect(15, 10, 98, 50, 1);
+                // S
+                display.rect(20, 15, 26, 8, 1, true);
+                display.rect(20, 23, 8, 8, 1, true);
+                display.rect(20, 31, 26, 8, 1, true);
+                display.rect(38, 39, 8, 8, 1, true);
+                display.rect(20, 47, 26, 8, 1, true);
+                // E
+                display.rect(51, 15, 26, 8, 1, true);
+                display.rect(51, 23, 8, 32, 1, true);
+                display.rect(59, 31, 18, 8, 1, true);
+                display.rect(59, 47, 18, 8, 1, true);
+                // T
+                display.rect(82, 15, 26, 8, 1, true);
+                display.rect(91, 23, 8, 32, 1, true);
+                display.show();
 
+                vTaskDelay(pdMS_TO_TICKS(2000));
+                menu_state = 0;
+                break;
             default:
                 break;
 

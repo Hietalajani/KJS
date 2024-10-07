@@ -102,7 +102,8 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
         buf[p->tot_len] = 0;
 
         printf("***\nnew data received from server:\n***\n\n%s\n", buf);
-        xQueueSend(api_que, &buf, pdMS_TO_TICKS(1));
+
+        xQueueSend(api_que, buf, pdMS_TO_TICKS(1));
         free(buf);
 
 
