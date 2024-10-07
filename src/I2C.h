@@ -33,22 +33,8 @@
 
 #define BAUD_RATE 115200
 #define MEASURE_PRESSURE 0xF1
-#define SOFT_RESET 0xFE
-#define SCALE_FACTOR 240.0 //Pa^-1
-#define MAX_BYTES 16
-#define FANSPEED_ADDR 0, 0
-#define SETPOINT_ADDR 0, 1
-#define PRESSURE_ADDR 0, 2
-#define AUTO_ADDR 0, 3
-#define ERROR_ADDR 0, 4
-#define CO2_ADDR 0, 5
-#define RH_ADDR 0, 6
-#define TEMP_ADDR 0, 7
 
-struct oled_params {
-    ssd1306 display;
-    QueueHandle_t q;
-};
+#define SCALE_FACTOR 240.0 //Pa^-1
 
 struct sensor_data {
     double temp;
@@ -66,14 +52,11 @@ public:
     static void write_eeprom(uint16_t data);
     static uint16_t read_eeprom();
     static void eeprom_task(void *params);
-    uint8_t get_data(const std::string& type);
-    void scroll();
     static int menu_state;
 
     static void init_i2c();
 
     static void update_oled(void *params);
-    static void set_values(int fanspeed, int temp, int co2, int rh, int pressure);
 
     static uint8_t USERNAME[13];
     static uint8_t PASSWORD[9];
@@ -93,21 +76,6 @@ public:
         int pressure;
 
     };
-
-    static struct eeprom_data {
-        uint8_t fanspeed_data;
-        uint8_t pressure_data;
-        uint8_t co2_data;
-        uint8_t rh_data;
-        uint8_t temp_data;
-    } send_data;
-private:
-    // eeprom
-
-
-    static uint8_t eeprom_buffer[5];
-    // sensirion
 };
-
 
 #endif //WEEDHILL_PROJECT_I2C_H
