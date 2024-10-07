@@ -1,6 +1,7 @@
 #include <mbedtls/debug.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include <string.h>
 
 #if 1
 #define WIFI_SSID "iPhone (Lore)"
@@ -11,7 +12,7 @@
 #define TB_ID      "53310"
 
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
-#define TLS_CLIENT_HTTP_SEND_DATA  ("GET /update?api_key="TS_API_KEY"&field1=100&field2=60&field3=24&field4=40&field5=150 HTTP/1.1\r\n" \
+//#define TLS_CLIENT_HTTP_SEND_DATA  ("GET /update?api_key="TS_API_KEY"&field1=100&field2=60&field3=24&field4=40&field5=150 HTTP/1.1\r\n" \
                                   "Host: api.thingspeak.com\r\n" \
                                   "User-Agent: PicoW\r\n" \
                                   "Accept: */*\r\n" \
@@ -59,7 +60,7 @@ CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n\
 extern bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout);
 
 
-void tls_test(int send_or_receive) {
+void tls_test(int send_or_receive, const char* data_string) {
 #if 0
     struct timeval now;
     now.tv_sec = 1725920831;
@@ -68,6 +69,16 @@ void tls_test(int send_or_receive) {
 #endif
     char ssid[] = WIFI_SSID;
     char pwd[] = WIFI_PASSWORD;
+    char TLS_CLIENT_HTTP_SEND_DATA[512];
+    snprintf(TLS_CLIENT_HTTP_SEND_DATA, sizeof(TLS_CLIENT_HTTP_SEND_DATA),
+             "GET /update?api_key=%s%s HTTP/1.1\r\n"
+             "Host: api.thingspeak.com\r\n"
+             "User-Agent: PicoW\r\n"
+             "Accept: */*\r\n"
+             "Content-Length: 0\r\n"
+             "Content-Type: application/x-www-form-urlencoded\r\n"
+             "\r\n",
+             TS_API_KEY, data_string);
     printf("SSID: %s\nPWD: %s\n", ssid, pwd);//WIFI_SSID, WIFI_PASSWORD);
     if (cyw43_arch_init()) {
         printf("failed to initialise\n");

@@ -42,6 +42,7 @@ struct task_params {
     QueueHandle_t SensorToEEPROM_que;
     QueueHandle_t SensorToRANGE_que;
     QueueHandle_t API_QUE;
+    QueueHandle_t SensorTOWIFI_que;
     ssd1306 display;
     Fmutex mutex;
 };

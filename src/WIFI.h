@@ -9,6 +9,8 @@
 #include "timers.h"
 #include "IPStack.h"
 #include "semphr.h"
+#include "Sensor_task.h"
+#include <string>
 
 #define BUFSIZE 2048
 #define SEND 1
@@ -16,7 +18,7 @@
 #define TIMER_TIMEOUT 25000
 void API_callback( TimerHandle_t xTimer);
 void api_task(void *param);
-extern "C" void tls_test(int send_or_receive);
+extern "C" void tls_test(int send_or_receive, const char* data_string);
 
 class WIFI {
 

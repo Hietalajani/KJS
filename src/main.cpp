@@ -35,6 +35,7 @@ int main() {
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t eeprom_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t range_queue = xQueueCreate(5, sizeof(sensor_data));
+    QueueHandle_t wifi_queue = xQueueCreate(5, sizeof(sensor_data));
     static task_params spr {
             .minus = ob.binary_semaphore_minus,
             .plus = ob.binary_semaphore_plus,
@@ -43,6 +44,7 @@ int main() {
             .SensorToEEPROM_que = eeprom_queue,
             .SensorToRANGE_que = range_queue,
             .API_QUE = api_que,
+            .SensorTOWIFI_que = wifi_queue,
             .display = display,
             .mutex = mutex
     };
