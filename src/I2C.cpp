@@ -94,7 +94,7 @@ void I2C::update_oled(void *params) {
     mono_vlsb cr(cursor4x8, 4, 8);
 
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(150));
+        vTaskDelay(pdMS_TO_TICKS(5));
         display.fill(0);
 
         xQueueReceive(par->SensorToOLED_que, static_cast <void *> (&data), pdMS_TO_TICKS(5));
@@ -111,8 +111,8 @@ void I2C::update_oled(void *params) {
                 display.text("Temp: " + std::to_string((int) data.temp) + "C", 5, 10);
                 display.text("CO2: " + std::to_string((int) data.co2) + "ppm", 5, 20);
                 display.text("RH: " + std::to_string((int) data.rh) + "%", 5, 30);
-                display.text("Fanspeed: " + std::to_string((int) (data.fanspeed / 10)) + "%", 5, 40);
-                display.text("Pressure: " + std::to_string((int) data.pressure), 5, 50);
+                display.text("Fan: " + std::to_string((int) (data.fanspeed / 10)) + "%", 5, 40);
+                display.text("hPa: " + std::to_string((int) data.pressure), 5, 50);
                 display.show();
                 break;
             case 4:
@@ -124,6 +124,8 @@ void I2C::update_oled(void *params) {
                 }
                 display.show();
                 break;
+            case 5:
+
             default:
                 break;
 

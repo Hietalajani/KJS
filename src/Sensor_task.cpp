@@ -13,8 +13,8 @@ void send_data(double temp, uint16_t co, uint16_t co2, double rh, uint16_t fansp
     xQueueSend(queue, (void *) &s, pdMS_TO_TICKS(10));
 }
 
-bool in_range(int low, int high, int co2){
-    return (low <= co2 && co2 <= high);
+bool in_range(int lo, int hi, int co2){
+    return (co2 >= lo && co2 <= hi);
 }
 
 void sensor_task(void *param){
@@ -29,9 +29,9 @@ void sensor_task(void *param){
     auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, 9600, STOP_BITS)};
     auto rtu_client{std::make_shared<ModbusClient>(uart)};
 
-    //Timeout for moodbuss
+    //Timeout for modbus
     TimeOut_t xTimeOut;
-    auto modbus_poll = make_timeout_time_ms(10000);
+    auto modbus_poll = make_timeout_time_ms(25000);
 //    vTaskSetTimeOutState(&xTimeOut);
 
     // CO2
@@ -64,12 +64,15 @@ void sensor_task(void *param){
 
     I2C::Sensirion s;
 
+    auto range = true;
+
     while(true){
         double temperature = temp.read() / 10.0;
         uint16_t co = co2.read();
         double relhum = rh.read() / 10.0;
         //Sensirion.
         uint16_t pressure = s.get_result();
+
 
         // Queue to read set CO2 level from user.
         if (I2C::menu_state == 4) {
@@ -94,35 +97,24 @@ void sensor_task(void *param){
             critical_co2 = true;
         }
         // Running max fan speed until we achieve received CO2 level, or yes?
-        if (critical_co2 && co >= set_co2){
-            produal.write(MAX_FANSPEED);
+        if (critical_co2 && co > set_co2 + 15){
+            if (fan_speed + 20 > 1000) fan_speed = 1000;
+            else fan_speed += 20;
+            fan_write = true;
         } else {
             critical_co2 = false;
+            if (co <= set_co2 + 15) {
+                if (fan_speed - 20 < 0) fan_speed = 0;
+                else fan_speed -= 20;
+                fan_write = true;
+            }
         }
 
-        // Adjusting the CO2 level to set CO2.
-        if (co != set_co2){
-            if (!in_range(set_co2 - SCALE, set_co2 + SCALE, co)) {
-                if (co <= set_co2) {
-                    if (fan_speed - 20 < 0) fan_speed = 0;
-                    else fan_speed -= 20;
-                } else if (co > set_co2 + 15) {
-                    if (fan_speed + 20 > 1000) fan_speed = 1000;
-                    else fan_speed += 20;
-                }
-                else {
-                    if (fan_speed > 500 && (fan_speed - 20) < 500) fan_speed = 500;
-                    else if (fan_speed > 500 && (fan_speed - 20) > 500) fan_speed -= 20;
-                    else if (fan_speed < 500 && (fan_speed + 20) > 500) fan_speed = 500;
-                    else if (fan_speed < 500 && (fan_speed + 20) < 500) fan_speed += 20;
-                }
-                fan_write = true;
-            }
-            else {
-                if (fan_speed - 5 < 0) fan_speed = 0;
-                else fan_speed -= 5;
-                fan_write = true;
-            }
+        if (!range && co < set_co2) {
+            gpio_put(27, true);
+            vTaskDelay(pdMS_TO_TICKS(330));
+            gpio_put(27, false);
+            range = true;
         }
 
         // Fanspeed 0 - 1000 = 0-100% = 0-10V
@@ -149,7 +141,9 @@ void sensor_task(void *param){
             printf("RH =%5.1f%%\n", relhum);
             printf("TEMP =%5.1fC\n", temperature);
             printf("CO2 = %d ppm\n", co);
-            modbus_poll = delayed_by_ms(modbus_poll, 10000);
+            modbus_poll = delayed_by_ms(modbus_poll, 25000);
+            range = in_range(set_co2 - SCALE, set_co2 + SCALE, co);
         }
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
