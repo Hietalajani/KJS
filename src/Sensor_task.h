@@ -18,7 +18,7 @@
 #define UART_NR 1
 #define UART_TX_PIN 4
 #define UART_RX_PIN 5
-#define SCALE 5
+#define SCALE 20
 #endif
 
 #define STOP_BITS 2 // for simulator
@@ -27,6 +27,7 @@
 #include "ModbusRegister.h"
 #include "ModbusClient.h"
 #include "PicoOsUart.h"
+#include "timers.h"
 void sensor_task(void *param);
 
 struct task_params {
@@ -35,6 +36,7 @@ struct task_params {
     SemaphoreHandle_t sw;
     QueueHandle_t SensorToOLED_que; // sensor to oled
     QueueHandle_t SensorToEEPROM_que;
+    QueueHandle_t SensorToRANGE_que;
     ssd1306 display;
     Fmutex mutex;
 };
