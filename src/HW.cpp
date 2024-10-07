@@ -6,6 +6,7 @@ volatile bool state = false;
 volatile SemaphoreHandle_t button_sem1 = xSemaphoreCreateBinary();
 volatile SemaphoreHandle_t button_sem2 = xSemaphoreCreateBinary();
 
+//handle and debounce rotary encoder button pin and rot_a
 void HW::handler(uint gpio, uint32_t eventmask) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
@@ -32,12 +33,9 @@ void HW::handler(uint gpio, uint32_t eventmask) {
     timems = newtime;
 }
 
+//checking the interrupt event, verifying the direction of rotation, and sending other semaphores depending on the event
 void HW::button_task(void *params) {
     auto par = (task_params *) params;
-
-    const uint led_pin = 21;
-    gpio_init(led_pin);
-    gpio_set_dir(led_pin, GPIO_OUT);
 
     while (true) {
         if (xSemaphoreTake(button_sem1, pdMS_TO_TICKS(5)) == pdTRUE) {
