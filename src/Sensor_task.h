@@ -10,6 +10,9 @@
 #define CRITICAL_CO2 2000
 #define MIN_CO2 0
 
+#define CO2_PUMPING_CHECK 25000
+#define CO2_PUMPING_TIME 330
+
 #if 0
 #define UART_NR 0
 #define UART_TX_PIN 0
