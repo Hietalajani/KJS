@@ -16,6 +16,10 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+
+extern QueueHandle_t api_que;
+
 
 typedef struct TLS_CLIENT_T_ {
     struct altcp_pcb *pcb;
@@ -98,7 +102,9 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
         buf[p->tot_len] = 0;
 
         printf("***\nnew data received from server:\n***\n\n%s\n", buf);
+        xQueueSend(api_que, &buf, pdMS_TO_TICKS(1));
         free(buf);
+
 
         altcp_recved(pcb, p->tot_len);
     }

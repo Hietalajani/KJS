@@ -8,6 +8,7 @@
 #include "ssd1306.h"
 #include "I2C.h"
 #include "Sensor_task.h"
+#include "WIFI.h"
 
 #include "hardware/timer.h"
 extern "C" {
@@ -32,6 +33,7 @@ int main() {
     QueueHandle_t oled_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t eeprom_queue = xQueueCreate(5, sizeof(sensor_data));
     QueueHandle_t range_queue = xQueueCreate(5, sizeof(sensor_data));
+    api_que = xQueueCreate(5, sizeof(char) * 500);
     static task_params spr {
             .minus = ob.binary_semaphore_minus,
             .plus = ob.binary_semaphore_plus,
@@ -39,37 +41,33 @@ int main() {
             .SensorToOLED_que = oled_queue,
             .SensorToEEPROM_que = eeprom_queue,
             .SensorToRANGE_que = range_queue,
+            .API_QUE = api_que,
             .display = display,
             .mutex = mutex
     };
 
+    TimerHandle_t API_calls = xTimerCreate(
+            "Update Thing speak data and read que",
+            TIMER_TIMEOUT,
+            pdTRUE,
+            nullptr,
+            API_callback
+    );
+    /*TimerHandle_t Update_TS = xTimerCreate(
+            "Update Thing speak data",
+            TIMER_TIMEOUT,
+            pdTRUE,
+            nullptr,
+            update_ts_callback
+    );*/
 
-    // CREATE TASKS
-    // BUTTON TASK (HW CLASS)
-    //  - init buttons
-    //  - create ISR -> gives semaphores when activated
-    //  - button task controls global variable cursor_position that navigates the menu
-    //  - depending on menu state, button task also controls CO2 level
-
-    // MODBUS TASK (MODBUS CLASS?)
-    //  - put keijos code inside modbus task lmao
-    //  - when task sees something added into the queue, it spanks it to the fan with produal.write hehe
-
-    // I2C TASK (I2C CLASS) -- EEPROM, SENSIRION AND OLED (SEPARATE TASKS?)
-    //  - eeprom reads from queue -> writes to eeprom, then waits for queue again
-    //  - on startup eeprom read
-    //  - sensirion init and is read every time modbus_poll timer PROCS
-    //  - OLED init and then refresh x times per second, checking menu_state
 
     xTaskCreate(I2C::update_oled, "OLED", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(I2C::eeprom_task, "EEPROM", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(sensor_task, "SENSOR", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(HW::button_task, "BUTTONS", 512, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
-
-    // ------------------------------------- MINIMUM REQUIREMENTS DONE -----------------------------------------
-    //
-    //  THINGSPEAK THINGS
-
+    xTaskCreate(api_task, "API Calls", 1024, (void *) &spr, tskIDLE_PRIORITY + 1, nullptr);
+    xTimerStart(API_calls, pdMS_TO_TICKS(15000));
 
     vTaskStartScheduler();
 
