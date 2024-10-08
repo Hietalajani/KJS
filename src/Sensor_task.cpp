@@ -23,6 +23,7 @@ void sensor_task(void *param){
     QueueHandle_t sensor_queue = spr->SensorToOLED_que;
     QueueHandle_t eeprom_queue = spr->SensorToEEPROM_que;
     QueueHandle_t api_que = spr->API_QUE;
+    QueueHandle_t wifi_queue = spr->SensorTOWIFI_que;
     SemaphoreHandle_t minus = spr->minus;
     SemaphoreHandle_t plus = spr->plus;
     SemaphoreHandle_t set_co2_level = spr->sw;
@@ -144,6 +145,7 @@ void sensor_task(void *param){
 
         //send all data.
         send_data(temperature, co, set_co2, relhum, fan_speed, pressure, sensor_queue, received_co_change);
+        send_data(temperature, co, set_co2, relhum, fan_speed, pressure, wifi_queue, received_co_change);
 
         if (eeprom_write) {
             send_data(temperature, co, set_co2, relhum, fan_speed, pressure, eeprom_queue, received_co_change);
