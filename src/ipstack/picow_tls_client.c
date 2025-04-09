@@ -4,11 +4,6 @@
 #include <string.h>
 
 #if 1
-#define WIFI_SSID "iPhone (Lore)"
-#define WIFI_PASSWORD "moromoro123"
-
-#define TS_API_KEY "CMP4T8OD4I7JIO0E"
-#define TB_API_KEY "C7BZYN6EG1OWPVS1"
 #define TB_ID      "53310"
 
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
@@ -19,7 +14,7 @@
                                   "Content-Length: 0\r\n" \
                                   "Content-Type: application/x-www-form-urlencoded\r\n" \
                                   "\r\n")
-#define TLS_CLIENT_HTTP_RECEIVE_DATA  "GET /channels/2684345/fields/5.json?api_key=CRM2H2J47Q1DGW7B&results=2 HTTP/1.1\r\n" \
+#define TLS_CLIENT_HTTP_RECEIVE_DATA  "GET /channels/2684345/fields/5.json?api_key=xxxxxxxxx&results=2 HTTP/1.1\r\n" \
                                   "Host: api.thingspeak.com\r\n" \
                                   "User-Agent: PicoW\r\n" \
                                   "Accept: */*\r\n" \
